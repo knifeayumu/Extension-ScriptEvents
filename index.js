@@ -60,57 +60,46 @@ function makeListener(closure) {
     return { listener, id };
 }
 
-/**
- * Sets up an event listener.
- */
-function eventOn(args, closure) {
+function validateAndPrepareEvent(args, closure) {
+    if (Array.isArray(closure)) {
+        closure = closure.find((c) => c instanceof SlashCommandClosure);
+    }
+
     if (!(closure instanceof SlashCommandClosure)) {
         toastr.error('Callback is not a closure.');
-        return '';
+        return null;
     }
 
     const event = String(args.event).trim().toLowerCase();
 
     if (!event) {
         toastr.warning('Event name is required.');
-        return '';
+        return null;
     }
 
     const eventId = findEventId(event);
 
     if (!eventId) {
         toastr.warning(`Event ${event} not found.`);
-        return '';
+        return null;
     }
 
     const { listener, id } = makeListener(closure);
-    eventSource.on(eventId, listener);
-    return id;
+    return { eventId, listener, id };
+}
+
+function eventOn(args, closure) {
+    const eventDetails = validateAndPrepareEvent(args, closure);
+    if (!eventDetails) return '';
+    eventSource.on(eventDetails.eventId, eventDetails.listener);
+    return eventDetails.id;
 }
 
 function eventOnce(args, closure) {
-    if (!(closure instanceof SlashCommandClosure)) {
-        toastr.error('Callback is not a closure.');
-        return '';
-    }
-
-    const event = String(args.event).trim().toLowerCase();
-
-    if (!event) {
-        toastr.warning('Event name is required.');
-        return '';
-    }
-
-    const eventId = findEventId(event);
-
-    if (!eventId) {
-        toastr.warning(`Event ${event} not found.`);
-        return '';
-    }
-
-    const { listener, id } = makeListener(closure);
-    eventSource.once(eventId, listener);
-    return id;
+    const eventDetails = validateAndPrepareEvent(args, closure);
+    if (!eventDetails) return '';
+    eventSource.once(eventDetails.eventId, eventDetails.listener);
+    return eventDetails.id;
 }
 
 function eventOff(_, value) {
