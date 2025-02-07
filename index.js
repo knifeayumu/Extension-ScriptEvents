@@ -27,9 +27,15 @@ function assignNestedVariables(scope, arg, prefix) {
     Object.entries(arg).forEach(([key, value]) => {
         const newPrefix = `${prefix}.${key}`;
         if (typeof value === 'object' && value !== null) {
-            assignNestedVariables(scope, value, newPrefix);
+            if (Array.isArray(value)) {
+                value.forEach((item, i) => {
+                    assignNestedVariables(scope, { [i]: item }, newPrefix);
+                });
+            } else {
+                assignNestedVariables(scope, value, newPrefix);
+            }
         } else {
-            scope.letVariable(newPrefix, value);
+            scope.letVariable(newPrefix, String(value));
         }
     });
 }
@@ -46,10 +52,16 @@ function makeListener(closure) {
         const scope = originalScope.getCopy();
         args.forEach((arg, index) => {
             if (arg === null || arg === undefined) return;
-            scope.letVariable(`arg${index}`, arg);
+            scope.letVariable(`arg${index}`, String(arg));
 
             if (typeof arg === 'object' && arg !== null) {
-                assignNestedVariables(scope, arg, `arg${index}`);
+                if (Array.isArray(arg)) {
+                    arg.forEach((item, i) => {
+                        assignNestedVariables(scope, { [i]: item }, `arg${index}`);
+                    });
+                } else {
+                    assignNestedVariables(scope, arg, `arg${index}`);
+                }
             }
         });
 
