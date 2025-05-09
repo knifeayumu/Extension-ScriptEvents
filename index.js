@@ -119,11 +119,22 @@ function eventOff(_, value) {
     const listener = listeners.get(id);
     if (!listener) {
         toastr.warning(`Listener with ID ${id} not found.`);
-        return;
+        return '';
     }
 
-    eventSource.removeListener(listener);
+    // Need to iterate because we don't save the event name in the listener
+    for (const [event, handlersList] of Object.entries(eventSource.events)) {
+        if (Array.isArray(handlersList)) {
+            const index = handlersList.indexOf(listener);
+            if (index !== -1) {
+                eventSource.removeListener(event, listener);
+                break;
+            }
+        }
+    }
+
     listeners.delete(id);
+    return '';
 }
 
 (function init() {
